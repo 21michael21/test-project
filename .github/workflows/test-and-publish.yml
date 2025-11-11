@@ -94,7 +94,6 @@ jobs:
           fi
       
       - name: Commit and push to reports repo
-        if: ${{ secrets.ALLURE_REPORTS_TOKEN != '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.ALLURE_REPORTS_TOKEN }}
         run: |
