@@ -84,7 +84,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: 21michael21/allure-reports
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.ALLURE_REPORTS_TOKEN }}
           path: reports-repo
           fetch-depth: 0
       
@@ -121,6 +121,7 @@ jobs:
           cd reports-repo
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
+          git remote set-url origin https://${{ secrets.ALLURE_REPORTS_TOKEN }}@github.com/21michael21/allure-reports.git
           git add reports/ allure-report/
           git commit -m "Update test results - $(date +'%Y-%m-%d %H:%M:%S')" || exit 0
           git push origin main
