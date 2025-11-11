@@ -28,8 +28,16 @@ jobs:
       
       - name: Run tests with Allure
         run: |
-          pytest tests/ -v --alluredir=allure-results
+          pytest tests/ -v --alluredir=allure-results --clean-alluredir
         continue-on-error: true  # Продолжить даже если тесты упали
+      
+      - name: Check generated results
+        run: |
+          echo "Allure results directory contents:"
+          ls -la allure-results/ || echo "Directory not found"
+          echo "JSON result files:"
+          find allure-results -name "*-result.json" | head -5 || echo "No result files"
+          find allure-results -name "*-result.json" | wc -l
       
       - name: Upload Allure results
         uses: actions/upload-artifact@v3
@@ -80,24 +88,42 @@ jobs:
           path: reports-repo
           fetch-depth: 0
       
+      - name: Check allure results
+        run: |
+          echo "Checking allure-results directory:"
+          ls -la allure-results/ || echo "Directory not found"
+          find allure-results -name "*.json" | head -5 || echo "No JSON files found"
+          find allure-results -name "*-result.json" | wc -l || echo "0"
+      
       - name: Copy results to reports repo
         run: |
+          mkdir -p reports-repo/reports/allure-results
           rm -rf reports-repo/reports/allure-results/*
-          cp -r allure-results/* reports-repo/reports/allure-results/
+          if [ -d "allure-results" ] && [ "$(ls -A allure-results)" ]; then
+            cp -r allure-results/* reports-repo/reports/allure-results/
+            echo "✅ Results copied successfully"
+            ls -la reports-repo/reports/allure-results/ | head -10
+          else
+            echo "⚠️ No results to copy"
+            exit 1
+          fi
+      
+      - name: Generate report in reports repo
+        run: |
+          cd reports-repo
+          echo "Generating report from:"
+          find reports/allure-results -name "*-result.json" | wc -l
+          allure generate reports/allure-results --clean -o allure-report
+          echo "✅ Report generated"
       
       - name: Commit and push to reports repo
         run: |
           cd reports-repo
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add reports/
+          git add reports/ allure-report/
           git commit -m "Update test results - $(date +'%Y-%m-%d %H:%M:%S')" || exit 0
           git push origin main
-      
-      - name: Generate report in reports repo
-        run: |
-          cd reports-repo
-          allure generate reports/allure-results --clean -o allure-report
       
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
