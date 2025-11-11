@@ -61,7 +61,6 @@ jobs:
           fi
       
       - name: Checkout reports repository
-        if: ${{ secrets.ALLURE_REPORTS_TOKEN != '' }}
         uses: actions/checkout@v4
         with:
           repository: 21michael21/allure-reports
