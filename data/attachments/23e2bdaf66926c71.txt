@@ -1,1 +1,0 @@
-{'Server': 'QRATOR', 'Date': 'Tue, 11 Nov 2025 17:02:17 GMT', 'Content-Type': 'text/html', 'Transfer-Encoding': 'chunked', 'Connection': 'keep-alive', 'Keep-Alive': 'timeout=15', 'Content-Encoding': 'gzip'}
