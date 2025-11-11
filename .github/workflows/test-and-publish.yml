@@ -61,6 +61,7 @@ jobs:
           fi
       
       - name: Checkout reports repository
+        if: ${{ secrets.ALLURE_REPORTS_TOKEN != '' }}
         uses: actions/checkout@v4
         with:
           repository: 21michael21/allure-reports
@@ -94,6 +95,7 @@ jobs:
           fi
       
       - name: Commit and push to reports repo
+        if: ${{ secrets.ALLURE_REPORTS_TOKEN != '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.ALLURE_REPORTS_TOKEN }}
         run: |
@@ -106,13 +108,14 @@ jobs:
           git push origin main || echo "Push completed with warnings"
       
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.ALLURE_REPORTS_TOKEN }}
-          publish_dir: ./reports-repo/allure-report
-          keep_files: false
+        if: env.GITHUB_TOKEN != ''
         env:
           GITHUB_TOKEN: ${{ secrets.ALLURE_REPORTS_TOKEN }}
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ env.GITHUB_TOKEN }}
+          publish_dir: ./reports-repo/allure-report
+          keep_files: false
       
       - name: Get report URL
         run: |
