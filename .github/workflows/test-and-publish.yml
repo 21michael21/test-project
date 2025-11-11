@@ -1,0 +1,115 @@
+name: Run Tests and Publish Allure Report
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:  # Для ручного запуска
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      
+      - name: Run tests with Allure
+        run: |
+          pytest tests/ -v --alluredir=allure-results
+        continue-on-error: true  # Продолжить даже если тесты упали
+      
+      - name: Upload Allure results
+        uses: actions/upload-artifact@v3
+        with:
+          name: allure-results
+          path: allure-results
+          retention-days: 30
+  
+  publish-report:
+    needs: test
+    runs-on: ubuntu-latest
+    if: always()  # Запускать даже если тесты упали
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Download Allure results
+        uses: actions/download-artifact@v3
+        with:
+          name: allure-results
+          path: allure-results
+      
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      
+      - name: Download Allure
+        run: |
+          wget https://github.com/allure-framework/allure2/releases/download/2.24.0/allure-2.24.0.tgz
+          tar -xzf allure-2.24.0.tgz
+          sudo mv allure-2.24.0 /opt/allure
+          sudo ln -s /opt/allure/bin/allure /usr/local/bin/allure
+      
+      - name: Generate Allure Report
+        run: |
+          allure generate allure-results --clean -o allure-report
+      
+      - name: Checkout reports repository
+        uses: actions/checkout@v4
+        with:
+          repository: 21michael21/allure-reports
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: reports-repo
+          fetch-depth: 0
+      
+      - name: Copy results to reports repo
+        run: |
+          rm -rf reports-repo/reports/allure-results/*
+          cp -r allure-results/* reports-repo/reports/allure-results/
+      
+      - name: Commit and push to reports repo
+        run: |
+          cd reports-repo
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add reports/
+          git commit -m "Update test results - $(date +'%Y-%m-%d %H:%M:%S')" || exit 0
+          git push origin main
+      
+      - name: Generate report in reports repo
+        run: |
+          cd reports-repo
+          allure generate reports/allure-results --clean -o allure-report
+      
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./reports-repo/allure-report
+          keep_files: false
+      
+      - name: Get report URL
+        run: |
+          echo "📊 Allure Report доступен по ссылке:" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 https://21michael21.github.io/allure-reports/" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Отчет успешно опубликован!" >> $GITHUB_STEP_SUMMARY
+
