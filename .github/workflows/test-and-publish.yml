@@ -106,12 +106,11 @@ jobs:
           git push origin main || echo "Push completed with warnings"
       
       - name: Deploy to GitHub Pages
-        if: env.GITHUB_TOKEN != ''
         env:
           GITHUB_TOKEN: ${{ secrets.ALLURE_REPORTS_TOKEN }}
         uses: peaceiris/actions-gh-pages@v3
         with:
-          github_token: ${{ env.GITHUB_TOKEN }}
+          github_token: ${{ secrets.ALLURE_REPORTS_TOKEN }}
           publish_dir: ./reports-repo/allure-report
           keep_files: false
       
